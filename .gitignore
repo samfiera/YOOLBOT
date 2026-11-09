@@ -47,3 +47,11 @@ desktop.ini
 # WSL / Linux artifacts
 *.sock
 *.pid
+
+# YOOLBOT local settings and runtime state
+yoolbot-hub.env
+*.env.local
+openclaw.json
+.openclaw/
+workspace/
+sessions/
