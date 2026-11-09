@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YOOLBOT Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,700;1,800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#060708; --panel:#0d0f12; --panel2:#111419; --line:#1d2128;
+  --text:#ecebe8; --dim:#7b818a; --faint:#3a3f47;
+  --red:#ff2a3d; --amber:#ffb020; --green:#3ddc84; --blue:#5b7cfa;
+  --accent:var(--green);
+  --head:'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --mono:'JetBrains Mono', ui-monospace, Consolas, monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);overflow:hidden;cursor:none}
+body{font-family:var(--mono);font-size:clamp(11px,1.45vmin,22px);transition:filter 2s}
+body.night{filter:brightness(.5)}
+#stage{height:100vh;width:100vw;padding:2.2vmin;display:grid;gap:2vmin;
+  grid-template-columns:1.05fr 1fr;grid-template-rows:auto 1fr auto;
+  grid-template-areas:"face clock" "face kev" "bar bar";transition:transform 3s ease}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:1.6vmin;padding:2.2vmin;min-height:0;overflow:hidden;position:relative}
+.label{font-size:.78em;letter-spacing:.22em;color:var(--dim);text-transform:uppercase}
+
+/* face */
+#facecard{grid-area:face;display:flex;flex-direction:column;gap:1.6vmin}
+#facewrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;position:relative}
+#face{height:100%;max-height:34vh;width:auto;overflow:visible}
+.visor{fill:var(--panel2);stroke:var(--line);stroke-width:2}
+.st-think .visor{stroke:var(--accent);stroke-opacity:.45}
+#eyes{transform-box:fill-box;transform-origin:center;animation:blink 6.5s infinite}
+.eye{fill:var(--accent);filter:drop-shadow(0 0 7px var(--accent));transition:fill .6s}
+@keyframes blink{0%,93%,100%{transform:scaleY(1)}95%{transform:scaleY(.08)}}
+.st-think #eyes{animation:scan 1.8s ease-in-out infinite}
+@keyframes scan{0%,100%{transform:translateX(-9px)}50%{transform:translateX(9px)}}
+.st-sleep #eyes{animation:none;transform:scaleY(.1)}
+.st-alert #eyes{animation:flash .9s steps(2) infinite}
+@keyframes flash{50%{opacity:.25}}
+#xeyes{display:none;stroke:var(--faint);stroke-width:7;stroke-linecap:round}
+.st-off #eyes{display:none}.st-off #xeyes{display:block}
+#mouth{fill:none;stroke:var(--accent);stroke-width:4;stroke-linecap:round;transition:d .6s}
+.st-off #mouth{stroke:var(--faint)}
+#zz{display:none;fill:var(--dim);font:700 22px var(--head)}
+.st-sleep #zz{display:block;animation:zz 3s ease-in-out infinite}
+@keyframes zz{0%{opacity:0;transform:translateY(6px)}50%{opacity:1}100%{opacity:0;transform:translateY(-10px)}}
+#ring{fill:none;stroke:var(--accent);stroke-width:2;opacity:0;transform-box:fill-box;transform-origin:center}
+.st-think #ring{animation:ring 2.4s ease-out infinite}
+@keyframes ring{0%{opacity:.5;transform:scale(.92)}100%{opacity:0;transform:scale(1.08)}}
+
+.st-idle{--accent:var(--green)} .st-think{--accent:var(--blue)}
+.st-off{--accent:var(--amber)} .st-sleep{--accent:#4a5b80} .st-alert{--accent:var(--red)}
+.st-heads{--accent:var(--text)}
+.st-heads #eyes{animation:flash 1.4s steps(2) infinite}
+#msg{border-left:3px solid var(--accent);padding-left:1.6vmin;transition:border-color .6s}
+#msgtext{font:500 clamp(16px,3.1vmin,46px)/1.18 var(--head);letter-spacing:.01em;margin-top:.6vmin}
+.bline{line-height:1.5;padding:.7vmin 0;border-top:1px solid var(--line)}
+.bline:first-of-type{border-top:none}
+
+#ident{display:flex;align-items:baseline;justify-content:space-between;gap:1vmin}
+#name{font:italic 800 clamp(26px,6.2vmin,96px)/.9 var(--head);letter-spacing:.01em}
+#name span{color:var(--accent);transition:color .6s}
+#statelabel{font:700 clamp(14px,2.8vmin,40px) var(--head);letter-spacing:.14em;color:var(--accent);white-space:nowrap}
+#statesub{color:var(--dim)}
+#greeting{font:500 clamp(16px,3.1vmin,46px)/1.15 var(--head);letter-spacing:.01em}
+#brief{color:#c9c7c2;line-height:1.55}
+.aimeta{font-size:.75em;color:var(--faint);margin-top:.6vmin}
+
+/* clock */
+#clockcard{grid-area:clock;display:flex;justify-content:space-between;align-items:flex-end;gap:2vmin}
+#clock{font:700 clamp(40px,13vmin,210px)/.82 var(--head);letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+#date{margin-top:1vmin;letter-spacing:.18em;color:var(--dim);font-size:.85em}
+#wx{text-align:right}
+#temp{font:700 clamp(28px,7vmin,110px)/.9 var(--head)}
+#wxdesc{color:var(--dim);margin-top:.6vmin}
+
+/* rotating panel */
+#panel{grid-area:kev;display:flex;flex-direction:column;gap:1.4vmin}
+#phead{display:flex;justify-content:space-between;align-items:center}
+#dots{display:flex;gap:.8vmin}
+#dots i{width:1vmin;height:1vmin;min-width:7px;min-height:7px;border-radius:50%;background:var(--faint);transition:background .4s}
+#dots i.on{background:var(--text)}
+.view{display:none;flex:1;min-height:0;flex-direction:column;gap:1.6vmin;animation:fade .7s ease}
+.view.on{display:flex}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.big{font:700 clamp(26px,6vmin,96px)/.95 var(--head);letter-spacing:.01em}
+.mid{font:600 clamp(16px,3vmin,46px)/1.1 var(--head);letter-spacing:.02em}
+.sub{color:var(--dim)}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:2vmin;padding:.9vmin 0;border-top:1px solid var(--line)}
+.row .k{color:var(--dim);letter-spacing:.14em;font-size:.82em;text-transform:uppercase;white-space:nowrap}
+.row .v{text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pills{display:flex;gap:.8vmin}
+.pill{width:3.4vmin;height:3.4vmin;min-width:22px;min-height:22px;display:grid;place-items:center;border-radius:.6vmin;
+  font:700 clamp(12px,1.9vmin,28px) var(--head);border:1px solid var(--dim);color:var(--dim)}
+.pill.W{background:var(--text);color:var(--bg);border-color:var(--text)}
+.pill.D{color:var(--text);border-color:var(--text)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1.4vmin}
+.stat{border:1px solid var(--line);border-radius:1.2vmin;padding:1.4vmin}
+.stat .n{font:700 clamp(22px,5vmin,80px)/1 var(--head)}
+.spark{width:100%;height:9vmin;min-height:50px}
+.spark polyline{fill:none;stroke:var(--blue);stroke-width:2;vector-effect:non-scaling-stroke}
+.spark polygon{fill:var(--blue);opacity:.12}
+.bar{height:.9vmin;min-height:6px;border-radius:1vmin;background:var(--line);overflow:hidden;margin-top:.6vmin}
+.bar b{display:block;height:100%;background:var(--blue)}
+.bar b.hi{background:var(--amber)}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:3vmin;flex:1;min-height:0}
+.col{display:flex;flex-direction:column;gap:1vmin;min-width:0}
+.hint{font-size:.74em;color:var(--dim);line-height:1.35;opacity:.8}
+.split{display:flex;height:1.3vmin;min-height:8px;border-radius:1vmin;overflow:hidden;background:var(--line);margin-top:.4vmin}
+.split .g{background:var(--blue)} .split .c{background:#4b5260}
+.legend{display:flex;justify-content:space-between;font-size:.82em;color:var(--dim);margin-top:.5vmin}
+.legend b{font-weight:600;color:var(--text)}
+@media (max-height:700px){.hint{display:none}}
+.state{font:600 clamp(15px,2.6vmin,40px)/1.1 var(--head);letter-spacing:.02em}
+.livetag{border:1px solid var(--blue);color:var(--blue);padding:.1em .6em;border-radius:.4em;letter-spacing:.14em;font-size:.8em}
+/* bar */
+#bar{grid-area:bar;display:flex;gap:1.4vmin;align-items:stretch}
+.chip{flex:0 0 auto;display:flex;flex-direction:column;gap:.4vmin;padding:1.2vmin 1.6vmin;
+  border:1px solid var(--line);border-radius:1.2vmin;background:var(--panel);min-width:12vmin}
+.chip b{font-weight:600;display:flex;align-items:center;gap:.8vmin;white-space:nowrap}
+.chip b::before{content:"";width:.9vmin;height:.9vmin;min-width:7px;min-height:7px;border-radius:50%;background:var(--faint)}
+.chip.ok b::before{background:var(--green);box-shadow:0 0 8px var(--green)}
+.chip.bad b::before{background:var(--red);box-shadow:0 0 8px var(--red)}
+.chip.warn b::before{background:var(--amber)}
+#tipchip{flex:1 1 auto;min-width:0}
+#tip{color:#c9c7c2;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+#stale{position:fixed;top:1.2vmin;right:1.6vmin;color:var(--red);letter-spacing:.2em;font-size:.8em}
+
+/* portrait / small fallback */
+@media (max-aspect-ratio:1/1){
+  #stage{grid-template-columns:1fr;grid-template-rows:auto auto 1fr auto;
+    grid-template-areas:"clock" "face" "kev" "bar"}
+  #bar{flex-wrap:wrap}
+}
+</style>
+</head>
+<body class="st-idle">
+<div id="stage">
+  <section class="card" id="facecard">
+    <div id="ident">
+      <div id="name">YOOL<span>BOT</span></div>
+      <div id="statelabel">BOOTING</div>
+    </div>
+    <div id="statesub">Connecting to the hub…</div>
+    <div id="facewrap">
+      <svg id="face" viewBox="0 0 200 140" aria-label="YOOLBOT face">
+        <rect id="ring" x="4" y="4" width="192" height="132" rx="30"/>
+        <rect class="visor" x="8" y="8" width="184" height="124" rx="28"/>
+        <g id="eyes">
+          <rect class="eye" x="52" y="42" width="30" height="46" rx="13"/>
+          <rect class="eye" x="118" y="42" width="30" height="46" rx="13"/>
+        </g>
+        <g id="xeyes"><path d="M54 50l26 30M80 50l-26 30M120 50l26 30M146 50l-26 30"/></g>
+        <path id="mouth" d="M86 106 q14 7 28 0"/>
+        <text id="zz" x="158" y="38">z</text>
+      </svg>
+    </div>
+    <div id="msg" hidden><div class="label" id="msglabel"></div><div id="msgtext"></div></div>
+    <div id="greeting">…</div>
+    <div id="aibox">
+      <div id="brief">The model writes a fresh brief a couple of minutes after startup.</div>
+      <div class="aimeta" id="aimeta"></div>
+    </div>
+  </section>
+
+  <section class="card" id="clockcard">
+    <div>
+      <div id="clock">--:--</div>
+      <div id="date"></div>
+    </div>
+    <div id="wx">
+      <div id="temp">--°</div>
+      <div id="wxdesc">Loading weather…</div>
+    </div>
+  </section>
+
+  <section class="card" id="panel">
+    <div id="phead"><div class="label" id="ptitle">—</div><div id="dots"><i></i><i></i><i></i></div></div>
+    <div class="view" id="v-brief"></div>
+    <div class="view" id="v-united"></div>
+    <div class="view" id="v-fantasy"></div>
+    <div class="view" id="v-builds"></div>
+    <div class="view" id="v-rig"></div>
+    <div class="view" id="v-agent"></div>
+  </section>
+
+  <section id="bar">
+    <div class="chip" id="c-gw"><span class="label">Gateway</span><b>—</b></div>
+    <div class="chip" id="c-pc"><span class="label">GPU PC</span><b>—</b></div>
+    <div class="chip" id="c-model"><span class="label">Model</span><b>—</b></div>
+    <div class="chip" id="c-sbx"><span class="label">Sandbox</span><b>—</b></div>
+    <div class="chip" id="c-host"><span class="label">Host</span><b>—</b></div>
+    <div class="chip" id="tipchip"><span class="label">Tip</span><div id="tip">—</div></div>
+  </section>
+</div>
+<div id="stale" hidden>HUB OFFLINE</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const WMO = {0:"Clear",1:"Mostly clear",2:"Partly cloudy",3:"Overcast",45:"Fog",48:"Fog",
+  51:"Drizzle",53:"Drizzle",55:"Drizzle",56:"Freezing drizzle",57:"Freezing drizzle",
+  61:"Rain",63:"Rain",65:"Heavy rain",66:"Freezing rain",67:"Freezing rain",
+  71:"Snow",73:"Snow",75:"Heavy snow",77:"Snow grains",80:"Showers",81:"Showers",
+  82:"Heavy showers",85:"Snow showers",86:"Snow showers",95:"Thunderstorm",96:"Thunderstorm",99:"Thunderstorm"};
+
+function ago(t){ if(!t) return ""; const m = Math.round((Date.now()/1000 - t)/60);
+  return m < 1 ? "just now" : m < 60 ? m + "m ago" : Math.round(m/60) + "h ago"; }
+
+function setText(id, v){ $(id).textContent = v; }
+
+function chip(id, state, text){
+  const el = $(id);
+  el.className = "chip" + (state === true ? " ok" : state === false ? " bad" : state === "warn" ? " warn" : "");
+  el.querySelector("b").textContent = text;
+}
+
+function setState(st, label, sub){
+  document.body.classList.remove("st-idle","st-think","st-off","st-sleep","st-alert","st-heads");
+  document.body.classList.add("st-" + st);
+  setText("statelabel", label);
+  setText("statesub", sub);
+  $("mouth").setAttribute("d", st === "alert" || st === "off" ? "M86 110 q14 -7 28 0" :
+    st === "sleep" ? "M90 108 h20" : st === "heads" ? "M88 107 h24" : "M86 106 q14 7 28 0");
+  eyes(false);
+}
+function eyes(happy){
+  document.querySelectorAll(".eye").forEach(e => { e.setAttribute("y", happy ? 54 : 42);
+    e.setAttribute("height", happy ? 22 : 46); e.setAttribute("rx", happy ? 11 : 13); });
+  if (happy) $("mouth").setAttribute("d", "M80 102 q20 16 40 0");
+}
+
+function tick(){
+  const d = new Date();
+  setText("clock", d.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"}).replace(/\s?[AP]M/i, ""));
+  setText("date", d.toLocaleDateString([], {weekday:"long", month:"long", day:"numeric"}).toUpperCase());
+  document.body.classList.toggle("night", d.getHours() >= 23 || d.getHours() < 7);
+}
+
+function render(s){
+  const h = s.health || {};
+  const loaded = h.loaded || [];
+  const hr = new Date().getHours();
+
+  if (h.gateway === false) setState("alert", "GATEWAY DOWN", "The agent gateway isn't answering.");
+  else if (h.pc === false) setState("off", "BRAIN OFFLINE", "Gaming PC is asleep or Ollama is closed.");
+  else if (loaded.length) setState("think", "ACTIVE", `${loaded[0].name} loaded · ${loaded[0].gpu}% in VRAM`);
+  else if (h.gateway === undefined) setState("idle", "BOOTING", "Gathering first readings…");
+  else if (hr < 7) setState("sleep", "RESTING", "Quiet hours. Still listening.");
+  else setState("idle", "ONLINE", "Standing by.");
+
+  chip("c-gw", h.gateway, h.gateway ? "Up" : h.gateway === false ? "Down" : "—");
+  chip("c-pc", h.pc, h.pc ? "Reachable" : h.pc === false ? "Offline" : "—");
+  chip("c-model", loaded.length ? true : null,
+       (h.model || "—").replace(/-q4_K_M$/i, "") + (loaded.length ? "" : " · idle"));
+  chip("c-sbx", h.sandboxes == null ? "warn" : true,
+       h.sandboxes == null ? "Docker n/a" : h.sandboxes ? `${h.sandboxes} live` : "Ready");
+  chip("c-host", h.host ? (h.host.mem > 90 ? "warn" : true) : null,
+       h.host ? `RAM ${h.host.mem}% · load ${h.host.load}` : "—");
+
+  const w = s.weather;
+  if (w) {
+    setText("temp", `${w.temp}°`);
+    setText("wxdesc", `${WMO[w.code] || "—"} · feels ${w.feels}° · H ${w.hi}° L ${w.lo}° · rain ${w.rain}%`);
+  }
+
+  const sc = s.screen || {}, msg = sc.msg;
+  if (msg && h.gateway && h.pc !== false) {
+    if (msg.mood === "thinking") setState("think", "THINKING", "Working something out.");
+    else if (msg.mood === "alert") setState("heads", "HEADS UP", "YOOLBOT wants your attention.");
+    else if (msg.mood === "happy") eyes(true);
+  }
+  $("msg").hidden = !msg; $("greeting").hidden = !!msg; $("aibox").hidden = !!msg;
+  if (msg) { setText("msglabel", `From YOOLBOT · ${ago(msg.at)}`); setText("msgtext", msg.text); }
+  setOrder([...(sc.brief ? ["v-brief"] : []), "v-united", ...(s.fantasy ? ["v-fantasy"] : []), ...(sc.builds ? ["v-builds"] : []), "v-rig", "v-agent"]);
+  renderBrief(sc.brief);
+  renderFantasy(s.fantasy, sc.fantasy);
+  renderBuilds(sc.builds);
+
+  renderUnited(s.united, s.errors || {});
+  renderRig(s.rig, h, s.ai);
+  renderAgent(s.activity, h, s.errors || {});
+
+  const ai = s.ai;
+  if (ai && (ai.greeting || ai.brief)) {
+    setText("greeting", ai.greeting || "…");
+    setText("brief", ai.brief || "");
+    setText("tip", ai.tip || "—");
+    setText("aimeta", `written by ${ai.model} · ${ago(ai.at)}`);
+  } else if (s.errors && s.errors.ai) {
+    setText("aimeta", "model busy or offline · will retry");
+  }
+}
+
+
+// ---------- rotating panel ----------
+const TITLES = {"v-brief":"Morning brief","v-united":"Manchester United","v-fantasy":"Fantasy football","v-builds":"YOOLBOT builds","v-rig":"Rig monitor","v-agent":"YOOLBOT activity"};
+const BASE = ["v-united","v-rig","v-agent"];
+let order = BASE.slice(), cur = "v-united", pinned = false, briefAt = null, ffAt = null, bdAt = null;
+function showView(id){
+  cur = id;
+  Object.keys(TITLES).forEach(v => $(v).classList.toggle("on", v === id));
+  document.querySelectorAll("#dots i").forEach((d, j) => d.classList.toggle("on", order[j] === id));
+  setText("ptitle", TITLES[id]);
+}
+function setOrder(o){
+  if (o.join() === order.join()) return;
+  order = o;
+  $("dots").replaceChildren(...o.map(() => document.createElement("i")));
+  showView(o.includes(cur) ? cur : o[0]);
+}
+setInterval(() => { if (!pinned) showView(order[(order.indexOf(cur) + 1) % order.length]); }, 30000);
+
+function renderBrief(b){
+  const v = $("v-brief"); v.replaceChildren();
+  if (!b) return;
+  v.append(el("div","label", `Written ${local(b.at*1000, {hour:"numeric", minute:"2-digit"})} · ${ago(b.at)}`));
+  b.lines.forEach(l => v.append(el("div","bline", l)));
+  if (briefAt !== null && b.at !== briefAt && !pinned) showView("v-brief");   // new brief: show it now
+  briefAt = b.at;
+}
+
+function el(tag, cls, text){ const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function row(k, v){ const r = el("div","row"); r.append(el("span","k",k), el("span","v",v)); return r; }
+function local(iso, opts){ try { return new Date(iso).toLocaleString([], opts); } catch(e){ return ""; } }
+function until(iso){
+  const ms = new Date(iso) - Date.now(); if (ms <= 0) return "kicking off";
+  const d = Math.floor(ms/864e5), h = Math.floor(ms%864e5/36e5), m = Math.floor(ms%36e5/6e4);
+  return d ? `in ${d}d ${h}h` : h ? `in ${h}h ${m}m` : `in ${m}m`;
+}
+function sides(m){ const us = m.teams.find(t => t.us) || {}, them = m.teams.find(t => !t.us) || {}; return [us, them]; }
+function dur(s){ const d = Math.floor(s/86400), h = Math.floor(s%86400/3600), m = Math.floor(s%3600/60); return d ? `${d}d ${h}h` : h ? `${h}h ${m}m` : `${m}m`; }
+
+function renderUnited(u, err){
+  const v = $("v-united"); v.replaceChildren();
+  if (!u){ v.append(el("div","sub", err.united ? "Fixture feed unavailable · retrying" : "Loading fixtures…")); return; }
+  pinned = !!u.live;
+  if (u.live){ showView("v-united");
+    const [us, them] = sides(u.live);
+    const top = el("div"); top.append(el("span","livetag","LIVE"), el("span","sub","  " + (u.live.detail || "")));
+    const home = u.live.teams.find(t => t.home) || us, away = u.live.teams.find(t => !t.home) || them;
+    v.append(top, el("div","big", `${home.abbr} ${home.score ?? 0} – ${away.score ?? 0} ${away.abbr}`), el("div","mid", `vs ${them.name}`));
+  } else if (u.next){
+    const [us, them] = sides(u.next);
+    v.append(el("div","label","Next up · " + (u.next.comp || "")),
+             el("div","big", `${us.home ? "vs" : "@"} ${them.name}`),
+             el("div","mid", until(u.next.date)),
+             el("div","sub", local(u.next.date, {weekday:"long", month:"short", day:"numeric", hour:"numeric", minute:"2-digit"})));
+  }
+  if (u.last){
+    const [us, them] = sides(u.last), r = (u.form || []).slice(-1)[0] || "";
+    v.append(row("Last", `${us.home ? "vs" : "@"} ${them.name}  ${us.score}–${them.score}  ${r}`));
+  }
+  if (u.form && u.form.length){
+    const p = el("div","pills"); u.form.forEach(f => p.append(el("span","pill " + f, f)));
+    const r = el("div","row"); r.append(el("span","k","Form"), p); v.append(r);
+  }
+  if (u.table) v.append(row("League", `${u.table.rank}th · ${u.table.pts} pts · GD ${u.table.gd} · P${u.table.played}`.replace(/^1th/,"1st").replace(/^2th/,"2nd").replace(/^3th/,"3rd")));
+  (u.upcoming || []).forEach(m => { const [us, them] = sides(m);
+    const tag = {"Champions League":"UCL","Europa League":"UEL","Conference League":"UECL","FA Cup":"FA Cup","League Cup":"EFL Cup"}[m.comp];
+    v.append(row(local(m.date, {month:"short", day:"numeric"}), `${us.home ? "vs" : "@"} ${them.name}${tag ? " · " + tag : ""}`)); });
+}
+
+function renderBuilds(b){
+  const v = $("v-builds"); v.replaceChildren();
+  if (!b) return;
+  v.append(el("div","label", `Last build run ${local(b.at*1000, {weekday:"short", hour:"numeric", minute:"2-digit"})} · ${ago(b.at)}`));
+  b.lines.forEach(l => v.append(el("div","bline", l)));
+  if (bdAt !== null && b.at !== bdAt && !pinned) showView("v-builds");
+  bdAt = b.at;
+}
+
+function renderFantasy(f, picks){
+  const v = $("v-fantasy"); v.replaceChildren();
+  if (!f) return;
+  TITLES["v-fantasy"] = `Fantasy football · Week ${f.week}`;
+  if (cur === "v-fantasy") setText("ptitle", TITLES["v-fantasy"]);
+  v.append(el("div","label", f.team || "My team"),
+           el("div","mid", f.opp ? `vs ${f.opp}` : `Week ${f.week}`));
+  v.append(row("Record", f.record), row("Waiver priority", f.waiver_rank ? "#" + f.waiver_rank : "—"));
+  if (f.hurt && f.hurt.length) v.append(row("Starters flagged", f.hurt.join(", ")));
+  if (picks) {
+    v.append(el("div","label", `YOOLBOT's picks · ${local(picks.at*1000, {weekday:"short", hour:"numeric", minute:"2-digit"})}`));
+    picks.lines.forEach(l => v.append(el("div","bline", l)));
+    if (ffAt !== null && picks.at !== ffAt && !pinned) showView("v-fantasy");
+    ffAt = picks.at;
+  } else {
+    v.append(el("div","sub","Waiver picks land Tuesday morning."));
+  }
+}
+
+function spark(vals){
+  const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.setAttribute("viewBox","0 0 100 30"); svg.setAttribute("preserveAspectRatio","none"); svg.setAttribute("class","spark");
+  if (vals.length > 1){
+    const pts = vals.map((c,i) => `${(i/(vals.length-1)*100).toFixed(1)},${(30 - c*0.28 - 1).toFixed(1)}`);
+    const pg = document.createElementNS(svg.namespaceURI,"polygon"); pg.setAttribute("points", `0,30 ${pts.join(" ")} 100,30`);
+    const pl = document.createElementNS(svg.namespaceURI,"polyline"); pl.setAttribute("points", pts.join(" "));
+    svg.append(pg, pl);
+  }
+  return svg;
+}
+function meter(label, pct, text, warn = 90){
+  const w = el("div"); const r = row(label, text); r.style.borderTop = "none"; r.style.paddingBottom = "0";
+  const b = el("div","bar"), f = el("b", warn && pct >= warn ? "hi" : ""); f.style.width = Math.max(0, Math.min(100, pct)) + "%";
+  b.append(f); w.append(r, b); return w;
+}
+function renderRig(r, h, ai){
+  const v = $("v-rig"); v.replaceChildren();
+  if (!r){ v.append(el("div","sub","Sampling…")); return; }
+  const cpu = r.cpu.length ? r.cpu[r.cpu.length-1] : 0, mem = r.mem.length ? r.mem[r.mem.length-1] : 0;
+  const host = h.host || {}, cols = el("div","cols"), L = el("div","col"), R = el("div","col");
+
+  // ---- agent laptop
+  L.append(el("div","label","Agent laptop"), spark(r.cpu), el("div","hint","CPU over the last 15 min"));
+  L.append(meter("CPU", cpu, cpu + "%"),
+           meter("Memory", mem, host.mem_total_gb ? `${host.mem_used_gb} / ${host.mem_total_gb} GB` : mem + "%"),
+           meter("Disk (C:)", r.disk, `${r.disk}% · ${r.disk_free_gb} GB free`));
+  if (host.load != null) L.append(row("Load", `${host.load}${host.cores ? " / " + host.cores + " cores" : ""}`));
+  L.append(row("Laptop up", dur(r.uptime)));
+  if (h.gw_up != null) L.append(row("Gateway up", dur(h.gw_up)));
+
+  // ---- gaming PC
+  R.append(el("div","label","Gaming PC · RTX 5070"));
+  const g = h.gpu, m = (h.loaded || [])[0];
+  if (!h.pc) {
+    R.append(el("div","state","Offline"), el("div","hint","Asleep, or Ollama is closed. The agent can't think until it's back."));
+  } else {
+    if (g && g.util != null) {
+      R.append(spark(g.hist || [g.util]), el("div","hint","GPU load over the last 15 min · spikes while the model writes"));
+      R.append(meter("GPU load", g.util, g.util + "%", 0));                                // busy is not degraded
+      if (g.vram_total_mb) R.append(meter("VRAM", 100 * g.vram_used_mb / g.vram_total_mb,
+          `${(g.vram_used_mb/1024).toFixed(1)} / ${(g.vram_total_mb/1024).toFixed(1)} GB`, 0));   // full VRAM is normal
+      const tp = [g.temp_c != null ? g.temp_c + "°C" : null,
+                  g.power_w != null ? `${Math.round(g.power_w)}${g.power_cap_w ? " / " + Math.round(g.power_cap_w) : ""} W` : null].filter(Boolean);
+      if (tp.length) R.append(row("Temp · Power", tp.join(" · ")));
+    }
+    if (!m) {
+      R.append(row("Model", "idle · loads on next request"));
+    } else {
+      R.append(row("Model", m.name.replace(/-q4_K_M$/i,"")));
+      const sp = el("div","split"), gg = el("div","g"), c = el("div","c");
+      gg.style.width = m.gpu + "%"; c.style.width = (100 - m.gpu) + "%"; sp.append(gg, c);
+      const lg = el("div","legend");
+      const a = el("span"); a.append(el("b", null, `${m.vram_gb} GB`), " on GPU");
+      const b = el("span"); b.append(el("b", null, `${m.ram_gb ?? (m.size_gb - m.vram_gb).toFixed(1)} GB`), " in RAM");
+      lg.append(a, b);
+      R.append(sp, lg, el("div","hint", `Model split: ${m.gpu}% fits in VRAM, the rest runs from RAM. Fixed while loaded, not GPU load.`));
+      if (m.expires) R.append(row("Unloads", m.expires*1000 > Date.now() ? until(new Date(m.expires*1000).toISOString()) : "soon"));
+    }
+    if (ai && ai.tps) R.append(row("Speed", `${ai.tps} tok/s`));
+    R.append(row("Link", [h.pc_ms != null ? h.pc_ms + " ms" : null, h.ollama ? "Ollama v" + h.ollama : null].filter(Boolean).join(" · ") || "—"));
+  }
+
+  cols.append(L, R); v.append(cols);
+}
+
+function renderAgent(a, h, err){
+  const v = $("v-agent"); v.replaceChildren();
+  if (!a){ v.append(el("div","sub", err.activity ? "Gateway logs unavailable" : "Reading activity…")); return; }
+  const s = el("div","stats");
+  [[a.turns,"turns · 24h"],[a.tools,"tool calls · 24h"],[a.last ? ago(a.last) : "—","last active"]].forEach(([n,l]) => {
+    const c = el("div","stat"); c.append(el("div","n", String(n)), el("div","label", l)); s.append(c); });
+  v.append(s);
+  const state = (h.loaded || []).length ? "Model warm on GPU" : "Model idle";
+  v.append(row("Now", `${state} · ${h.sandboxes ?? 0} sandbox${h.sandboxes === 1 ? "" : "es"} live`));
+  if (!a.recent.length) v.append(el("div","sub","No agent turns in the last 24 hours."));
+  a.recent.forEach(x => v.append(row(local(x.at*1000, {hour:"numeric", minute:"2-digit"}),
+      `${x.tools} tool call${x.tools === 1 ? "" : "s"} · ${x.secs}s`)));
+}
+
+async function poll(){
+  try {
+    const r = await fetch("/api/status", {cache: "no-store"});
+    const s = await r.json();
+    if (s.ui) { if (window.__ui === undefined) window.__ui = s.ui; else if (s.ui !== window.__ui) location.reload(); }
+    render(s);
+    $("stale").hidden = true;
+  } catch (e) {
+    $("stale").hidden = false;
+    setState("alert", "HUB OFFLINE", "Can't reach the hub service.");
+  }
+}
+
+// slow pixel shift to avoid burn-in on an always-on panel
+setInterval(() => {
+  const x = Math.round(Math.random()*8 - 4), y = Math.round(Math.random()*8 - 4);
+  $("stage").style.transform = `translate(${x}px, ${y}px)`;
+}, 60000);
+
+showView("v-united");
+tick(); setInterval(tick, 1000);
+poll(); setInterval(poll, 5000);
+</script>
+</body>
+</html>

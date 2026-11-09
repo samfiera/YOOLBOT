@@ -1,139 +1,113 @@
-# YOOLBOT
+<p align="center"><img src="docs/images/yoolbot-avatar.png" width="140" alt="YOOLBOT"></p>
 
-> A hardened, always-on AI companion hosted on a dedicated home server — controllable from anywhere via Telegram.
+# YOOLBOT 2.0
 
-[![Status](https://img.shields.io/badge/status-live-10b981?style=flat-square)](https://samfiera.neocities.org)
-[![Stack](https://img.shields.io/badge/stack-OpenClaw%20%7C%20WSL2%20%7C%20Gemini%20Flash-3b82f6?style=flat-square)](#stack)
-[![Security](https://img.shields.io/badge/security-hardened-10b981?style=flat-square)](#security-posture)
+> A private, hardened AI agent that runs entirely on my own hardware: a local LLM on a gaming PC, an always-on agent laptop, and a room display with a face. **$0/month. No public ports. No cloud LLM.**
 
----
+[![Status](https://img.shields.io/badge/status-live-10b981?style=flat-square)](#)
+[![Stack](https://img.shields.io/badge/stack-OpenClaw%20%7C%20Ollama%20%7C%20Tailscale-3b82f6?style=flat-square)](docs/architecture.md)
+[![Model](https://img.shields.io/badge/model-qwen3--coder%2030B%20on%20RTX%205070-3b82f6?style=flat-square)](docs/architecture.md#models-ollama-on-the-gaming-pc)
+[![Security](https://img.shields.io/badge/audit-0%20warnings%20%C2%B7%201%20accepted%20risk-10b981?style=flat-square)](docs/threat-model.md)
 
-## What is YOOLBOT?
-
-YOOLBOT is a personal AI assistant I built and self-host on a dedicated, freshly-wiped laptop. It runs 24/7, can execute scheduled background tasks autonomously via cron, and is fully controllable from my phone through a Telegram bot interface.
-
-This repo documents the project architecture, design decisions, and security posture. The source code is not published here — this is a showcase and reference document.
-
-**Full technical write-up:** [samfiera.neocities.org/yoolbot-writeup.html](https://samfiera.neocities.org/yoolbot-writeup.html)
+![Room display](docs/images/hub-united.png)
 
 ---
 
-## Why I Built This
+## What it is
 
-I wanted an AI assistant that was genuinely mine — not a SaaS endpoint, not something that reset context every session, and not something running on hardware I shared with personal data. I wanted persistent, always-on compute under my control.
+YOOLBOT is my personal AI agent and home-lab project. v1 was a cloud-model chatbot behind a Telegram relay. **v2 brings everything home:** the model runs locally, the agent is sandboxed, and the only way in is a private Tailscale network.
 
-As someone building a career in security, I also wanted to understand what running an internet-connected AI agent looks like from a threat modelling perspective. This project served two purposes: build something useful, and deliberately stress-test my own infrastructure decisions.
+It's built around one assumption: **a small local model will eventually be prompt-injected.** So the model never gets network access, can't change its own instructions, and can only write to two folders. The worst case is a wrong sentence on my screen.
 
----
+## What it does
+
+| | |
+|---|---|
+| **Morning brief** | Weather, Man United, and the top security news, on the room screen by 06:45 |
+| **Room display** | A face that shows system state, plus live fixtures, rig stats and agent activity |
+| **Fantasy picks** | Reads my ESPN league and posts waiver adds every Tuesday |
+| **Build loop** | Works through a backlog of security tools on its own, three times an evening: code, tests, commit |
+| **RE toolbox** | radare2, binwalk, YARA, gdb, capstone, lief, all offline in the sandbox |
+| **Ops agent** | Claude Code reviews the build loop's work nightly and is on call from my phone |
 
 ## Architecture
 
-```
-[Telegram App] --> [Telegram API] --> [VPS Relay (static IP)] --> [YOOLBOT Host (WSL2)]
-                                                                         |
-                                                              [OpenClaw Agent Runtime]
-                                                                         |
-                                                              [Gemini Flash API (LLM)]
-                                                                         |
-                                                              [Cron Scheduler (background tasks)]
-```
+![Architecture](docs/images/architecture.png)
 
-### How a request flows
+- **Gaming PC (RTX 5070, 12 GB):** Ollama only. `qwen3-coder:30b` (MoE, split across VRAM and RAM) with a 9B fallback. Sleeps at night and wakes itself for the morning jobs.
+- **Agent laptop (WSL2, always on):** OpenClaw gateway on loopback, a Docker sandbox for every tool call, the hub service, and the kiosk display.
+- **Tailscale** with least-privilege grants: three allowed paths in total, everything else denied.
 
-1. Message sent from Telegram on my phone
-2. Telegram's API servers receive it
-3. Traffic routes through a VPS relay with a static IP (home IP is never exposed)
-4. YOOLBOT's polling loop picks up the message inside WSL2
-5. OpenClaw processes it through the Gemini Flash API
-6. Response is sent back through the same chain
+Details: [docs/architecture.md](docs/architecture.md)
 
-Separately, cron jobs fire on schedule and execute tasks independently of any user input.
+### The design rule
 
----
+> **Facts come from code. Judgment comes from the model.**
 
-## Stack
+Scores, fantasy data, weather and GPU stats are fetched by plain code the model can't touch. The model reads them from a read-only folder and writes short text for the screen. A prompt injection can't fake a score or a sensor reading.
 
-| Layer | Technology |
+## Security posture
+
+| If this happens | This stops it |
 |---|---|
-| Host OS | Windows (freshly wiped, dedicated machine) |
-| Runtime environment | WSL2 (Ubuntu) |
-| Agent framework | OpenClaw |
-| LLM backend | Google Gemini Flash (via API) |
-| Command interface | Telegram Bot API |
-| Task scheduling | Cron |
-| External connectivity | VPS relay (static IP) |
+| Malicious search result | Snippets only: `web_fetch` and `browser` denied, and the sandbox has no network |
+| Agent runs a harmful command | Docker sandbox: read-only root, all caps dropped, non-root |
+| It rewrites its own instructions | Workspace mounted read-only. Only `/screen` and `/projects` are writable |
+| Lateral movement | Tailscale grants + firewall rules allow exactly three paths |
+| Someone tries to get in | No public ports, no Funnel. Gateway on loopback. SSH key-only |
+| Bad plugin or data feed | 5 of 66 plugins allowed. The GPU reporter returns numbers only |
+| Fake text on the screen | Plain-text rendering, size caps, expiry, symlinks refused, and the agent can't trigger red/amber |
 
----
+`openclaw security audit`: 0 warnings, 1 accepted and documented risk. Full write-up: [docs/threat-model.md](docs/threat-model.md)
 
-## Security Posture
+## It has a face
 
-This was not a casual deployment. Every component was treated as a potential attack surface.
+![Faces](docs/images/faces.png)
 
-### Host preparation
-- Laptop fully wiped before setup — no residual personal data, credentials, or software
-- Rebuilt from a known-clean state so the entire software surface is accounted for
+Colors keep one meaning each. Red means a real failure, and nothing on the screen is ever red for decoration. The agent can post messages and moods, but only health checks can change the system state.
 
-### Network hardening
-- UFW configured with default-deny inbound inside WSL2
-- Unused ports audited and closed on both the Windows host and the WSL2 environment
-- Unnecessary Windows services disabled post-install
-- Home IP never exposed — all external traffic routes through a VPS relay
-- No inbound ports opened on the home router
-
-### Process isolation
-- Bot runs as a dedicated non-root user (`yoolbot`) with no sudo access
-- Blast radius of any agent compromise limited to that user's file scope
-- Cron jobs scoped to the same low-privilege user; all scripts `chmod 750`
-
-### Secrets management
-- API keys and bot token stored in `.env` file only — never hardcoded
-- `.env` set to `chmod 600`, owned by the bot user
-- Version control excludes all secrets via `.gitignore`
-
-### Access control
-- Telegram account protected with strong password and 2FA
-- Telegram account is the sole command interface — no other inbound access path exists
-- Bot token not shared or published anywhere
-
-### Threat model summary
-
-| Threat | Mitigation |
+| Rig view | Agent view |
 |---|---|
-| Prompt injection | Input locked to authenticated Telegram account only |
-| Shell escalation via agent | Non-root user, no sudo |
-| API key exposure | `.env` only, `chmod 600`, excluded from VCS |
-| Telegram account takeover | Strong password + 2FA |
-| Open port exploitation | UFW default-deny, VPS relay hides home IP |
-| Cron privilege escalation | Runs as `yoolbot` user, scripts `chmod 750` |
-| Personal data exfiltration | No personal data on the host machine |
+| ![Rig](docs/images/hub-rig.png) | ![Agent](docs/images/hub-agent.png) |
 
----
+## Repo layout
 
-## What YOOLBOT Can Do
+| Path | What |
+|---|---|
+| [`hub/`](hub) | Room display: stdlib Python server + single-page UI + self-contained installer |
+| [`pc/`](pc) | Gaming PC helpers: read-only GPU reporter and its locked-down installer |
+| [`laptop/`](laptop) | Kiosk helper (cursor parking) |
+| [`toolbox/`](toolbox) | Sandbox image (languages, test/lint, RE tools) and the projects repo |
+| [`automations/`](automations) | The scheduled-job prompts and what made them reliable |
+| [`projects/`](projects) | The build loop's backlog: 40+ offline, defensive tool ideas |
+| [`ops/`](ops) | Claude Code as the maintainer: permissions, Remote Control, nightly review |
+| [`docs/`](docs) | [Architecture](docs/architecture.md) · [Threat model](docs/threat-model.md) · [Setup](docs/setup.md) · [Lessons](docs/lessons.md) |
 
-- Respond to messages 24/7 via Telegram from any device
-- Execute autonomous background tasks on a cron schedule
-- Run independently of user input — persistent, always-on
-- Operate on isolated hardware with a locked-down security posture
+## What this repo does not contain
 
----
+- OpenClaw config, tokens, keys or the secret store
+- IP addresses, tailnet names, hostnames or account IDs (placeholders like `<LAPTOP_TAILSCALE_IP>` instead)
+- Conversation logs, session data or the agent's workspace
 
-## What This Repo Does Not Contain
+## Lessons
 
-- Bot source code
-- API keys or tokens
-- OpenClaw configuration files with personal setup details
-- Conversation logs or cron outputs
-- Any sensitive operational data
+Every bug taught something. My favourite: a "timeout" that was really a CUDA crash after the PC woke from sleep. The full list is in [docs/lessons.md](docs/lessons.md).
 
-This is intentional. The purpose of this repo is to document the project publicly without exposing anything that could be used against the infrastructure.
+## Roadmap
 
----
+- [ ] Everything recovers on its own after a reboot or sleep (WSL at boot, Ollama health check after wake)
+- [ ] IoT bridge for old devices through an MQTT topic allowlist
+- [ ] Prompt-injection test lab against my own agent
+- [ ] Allowlisted page fetch, so it can read sources safely
+- [ ] Package it: a one-command, secure-by-default installer that detects the GPU and picks the model
+
+## v1 (retired)
+
+The first YOOLBOT ran OpenClaw on a freshly wiped laptop with **Gemini Flash** as the model and **Telegram** as the interface, relayed through a VPS so my home IP was never exposed. It ran as a non-root user with UFW default-deny, secrets in a `chmod 600` `.env`, and 2FA on the Telegram account. v2 dropped the cloud model and the relay entirely: the agent now lives behind Tailscale, and the model runs on my own GPU.
 
 ## Links
 
-- **Portfolio:** [samfiera.neocities.org](https://samfiera.neocities.org)
-- **Full write-up:** [samfiera.neocities.org/yoolbot-writeup.html](https://samfiera.neocities.org/yoolbot-writeup.html)
+- **Portfolio:** [yool.neocities.org](https://yool.neocities.org)
 - **GitHub:** [github.com/samfiera](https://github.com/samfiera)
 
 ---
